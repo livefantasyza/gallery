@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProjectVault — Image Gallery</title>
+    <title>ProjectVault — Image Link Gallery</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -25,7 +25,6 @@
             --success: #22c55e;
             --success-bg: rgba(34,197,94,0.1);
             --warning: #f59e0b;
-            --warning-bg: rgba(245,158,11,0.1);
             --radius-sm: 8px;
             --radius-md: 14px;
             --radius-lg: 20px;
@@ -35,11 +34,7 @@
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -50,12 +45,8 @@
             overflow-x: hidden;
         }
 
-        /* Animated background mesh */
         .bg-mesh {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background:
                 radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 50%),
@@ -63,1088 +54,381 @@
         }
 
         .noise {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0.03;
+            position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-hover);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-        /* Layout */
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
+        .app { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 0 24px; }
 
-        /* Header */
         .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 24px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-            gap: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 24px 0; border-bottom: 1px solid var(--border);
+            margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
         }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
+        .brand { display: flex; align-items: center; gap: 14px; }
         .brand-icon {
-            width: 44px;
-            height: 44px;
+            width: 44px; height: 44px;
             background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 15px var(--accent-glow);
+            border-radius: var(--radius-md); display: flex;
+            align-items: center; justify-content: center;
+            font-size: 22px; box-shadow: 0 4px 15px var(--accent-glow);
         }
+        .brand-text h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+        .brand-text span { color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; }
 
-        .brand-text h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1.2;
-        }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
 
-        .brand-text span {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        /* Buttons */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px 20px; border-radius: var(--radius-md);
+            border: 1px solid var(--border); background: var(--bg-card);
+            color: var(--text-primary); font-family: inherit;
+            font-size: 0.9rem; font-weight: 500; cursor: pointer;
+            transition: var(--transition); white-space: nowrap;
         }
-
-        .btn:hover {
-            background: var(--bg-hover);
-            border-color: var(--border-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
+        .btn:hover { background: var(--bg-hover); border-color: var(--border-hover); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
         .btn-primary {
             background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            border-color: transparent;
-            color: white;
-            box-shadow: 0 4px 15px var(--accent-glow);
+            border-color: transparent; color: white; box-shadow: 0 4px 15px var(--accent-glow);
         }
+        .btn-primary:hover { box-shadow: 0 6px 25px var(--accent-glow); filter: brightness(1.1); }
+        .btn-ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+        .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+        .btn-danger { background: var(--danger-bg); border-color: rgba(239,68,68,0.2); color: var(--danger); }
+        .btn-danger:hover { background: rgba(239,68,68,0.2); }
+        .btn-sm { padding: 6px 14px; font-size: 0.8rem; border-radius: var(--radius-sm); }
 
-        .btn-primary:hover {
-            box-shadow: 0 6px 25px var(--accent-glow);
-            filter: brightness(1.1);
-        }
-
-        .btn-ghost {
-            background: transparent;
-            border-color: transparent;
-            color: var(--text-secondary);
-        }
-
-        .btn-ghost:hover {
-            background: var(--bg-card);
-            color: var(--text-primary);
-        }
-
-        .btn-danger {
-            background: var(--danger-bg);
-            border-color: rgba(239,68,68,0.2);
-            color: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background: rgba(239,68,68,0.2);
-        }
-
-        .btn-warning {
-            background: var(--warning-bg);
-            border-color: rgba(245,158,11,0.2);
-            color: var(--warning);
-        }
-
-        .btn-warning:hover {
-            background: rgba(245,158,11,0.2);
-        }
-
-        .btn-sm {
-            padding: 6px 14px;
-            font-size: 0.8rem;
-            border-radius: var(--radius-sm);
-        }
-
-        /* Toggle Switch */
-        .toggle-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 6px 16px;
-        }
-
-        .toggle-group label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            background: var(--bg-hover);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: var(--transition);
-            border: 1px solid var(--border);
-        }
-
-        .toggle-switch.active {
-            background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            border-color: transparent;
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 18px;
-            height: 18px;
-            background: white;
-            border-radius: 50%;
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(20px);
-        }
-
-        /* Stats Bar */
         .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px; margin-bottom: 32px;
         }
-
         .stat-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            transition: var(--transition);
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 20px; transition: var(--transition);
         }
-
-        .stat-item:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
+        .stat-item:hover { border-color: var(--border-hover); transform: translateY(-2px); }
         .stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
+            font-size: 1.75rem; font-weight: 700;
             background: linear-gradient(135deg, var(--accent-light), #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1;
         }
+        .stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
 
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            font-weight: 500;
-        }
-
-        /* Upload Zone */
-        .upload-section {
-            margin-bottom: 40px;
-        }
+        /* Upload Section */
+        .upload-section { margin-bottom: 24px; }
 
         .upload-zone {
-            position: relative;
-            background: var(--bg-card);
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-lg);
-            padding: 60px 40px;
-            text-align: center;
-            transition: var(--transition);
-            cursor: pointer;
-            overflow: hidden;
+            position: relative; background: var(--bg-card);
+            border: 2px dashed var(--border); border-radius: var(--radius-lg);
+            padding: 50px 40px; text-align: center;
+            transition: var(--transition); cursor: pointer; overflow: hidden;
         }
-
         .upload-zone::before {
-            content: '';
-            position: absolute;
-            inset: 0;
+            content: ''; position: absolute; inset: 0;
             background: linear-gradient(135deg, var(--accent-glow), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
+            opacity: 0; transition: opacity 0.3s;
         }
-
         .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--accent-light);
-            background: var(--bg-hover);
+            border-color: var(--accent-light); background: var(--bg-hover);
         }
+        .upload-zone:hover::before, .upload-zone.dragover::before { opacity: 1; }
+        .upload-zone.dragover { border-style: solid; transform: scale(1.01); }
 
-        .upload-zone:hover::before, .upload-zone.dragover::before {
-            opacity: 1;
-        }
-
-        .upload-zone.dragover {
-            border-style: solid;
-            transform: scale(1.01);
-        }
-
-        .upload-content {
-            position: relative;
-            z-index: 1;
-        }
-
+        .upload-content { position: relative; z-index: 1; }
         .upload-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 20px;
+            width: 64px; height: 64px; margin: 0 auto 20px;
             background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            box-shadow: 0 8px 30px var(--accent-glow);
+            border-radius: var(--radius-lg); display: flex;
+            align-items: center; justify-content: center;
+            font-size: 28px; box-shadow: 0 8px 30px var(--accent-glow);
         }
-
-        .upload-zone h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .upload-zone p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
+        .upload-zone h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; }
+        .upload-zone p { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px; }
 
         .upload-formats {
-            display: inline-flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
+            display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;
         }
-
         .format-tag {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            padding: 4px 12px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            padding: 4px 12px; border-radius: 100px; font-size: 0.75rem;
+            color: var(--text-muted); font-family: 'JetBrains Mono', monospace;
         }
 
-        .storage-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 16px;
-            padding: 6px 14px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        #fileInput { display: none; }
 
-        .storage-badge.local {
-            background: var(--success-bg);
-            color: var(--success);
-            border: 1px solid rgba(34,197,94,0.2);
+        /* Add URL Section */
+        .add-url-section { margin-bottom: 40px; }
+        .add-url-toggle {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; color: var(--text-secondary); font-size: 0.85rem;
+            cursor: pointer; padding: 12px; transition: var(--transition);
         }
-
-        .storage-badge.cloud {
-            background: rgba(59,130,246,0.1);
-            color: #60a5fa;
-            border: 1px solid rgba(59,130,246,0.2);
+        .add-url-toggle:hover { color: var(--accent-light); }
+        .add-url-panel {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 24px;
+            margin-top: 12px; display: none;
         }
+        .add-url-panel.open { display: block; }
 
-        #fileInput {
-            display: none;
+        .form-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label {
+            font-size: 0.75rem; font-weight: 500; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 12px 16px; background: var(--bg-primary);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-primary); font-family: inherit; font-size: 0.9rem;
+            outline: none; transition: var(--transition);
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .form-group textarea { resize: vertical; min-height: 60px; }
 
-        /* Toolbar */
+        .add-actions { display: flex; gap: 12px; margin-top: 4px; }
+
         .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-            gap: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
         }
-
-        .search-box {
-            position: relative;
-            flex: 1;
-            max-width: 400px;
-        }
-
+        .search-box { position: relative; flex: 1; max-width: 400px; }
         .search-box input {
-            width: 100%;
-            padding: 12px 16px 12px 44px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.9rem;
-            outline: none;
-            transition: var(--transition);
+            width: 100%; padding: 12px 16px 12px 44px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-md); color: var(--text-primary);
+            font-family: inherit; font-size: 0.9rem; outline: none; transition: var(--transition);
         }
-
-        .search-box input:focus {
-            border-color: var(--accent-light);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
+        .search-box input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-glow); }
         .search-box::before {
-            content: '🔍';
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 0.9rem;
-            opacity: 0.5;
+            content: '🔍'; position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%); font-size: 0.9rem; opacity: 0.5;
         }
 
         .view-toggle {
-            display: flex;
-            gap: 4px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 4px;
+            display: flex; gap: 4px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px;
         }
-
         .view-btn {
-            padding: 8px 14px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.85rem;
-            transition: var(--transition);
+            padding: 8px 14px; border: none; background: transparent;
+            color: var(--text-secondary); border-radius: var(--radius-sm);
+            cursor: pointer; font-family: inherit; font-size: 0.85rem; transition: var(--transition);
         }
+        .view-btn.active { background: var(--bg-hover); color: var(--text-primary); }
+        .view-btn:hover:not(.active) { color: var(--text-primary); }
 
-        .view-btn.active {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-        }
-
-        .view-btn:hover:not(.active) {
-            color: var(--text-primary);
-        }
-
-        /* Gallery Grid */
         .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 60px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px; margin-bottom: 60px;
         }
-
-        .gallery.list-view {
-            grid-template-columns: 1fr;
-        }
-
+        .gallery.list-view { grid-template-columns: 1fr; }
         .gallery.list-view .image-card {
-            display: grid;
-            grid-template-columns: 200px 1fr;
-            min-height: 160px;
+            display: grid; grid-template-columns: 200px 1fr; min-height: 160px;
         }
-
         .gallery.list-view .card-image {
-            height: 100%;
-            border-radius: var(--radius-md) 0 0 var(--radius-md);
+            height: 100%; border-radius: var(--radius-md) 0 0 var(--radius-md);
         }
+        .gallery.list-view .card-body { display: flex; flex-direction: column; justify-content: center; }
 
-        .gallery.list-view .card-body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        /* Image Card */
         .image-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            transition: var(--transition);
-            position: relative;
-            animation: cardIn 0.4s ease-out;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
+            transition: var(--transition); position: relative; animation: cardIn 0.4s ease-out;
         }
-
         @keyframes cardIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .image-card:hover {
-            border-color: var(--border-hover);
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-4px);
-        }
+        .image-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-lg); transform: translateY(-4px); }
 
         .card-image {
-            position: relative;
-            width: 100%;
-            height: 220px;
-            overflow: hidden;
-            background: var(--bg-secondary);
+            position: relative; width: 100%; height: 220px;
+            overflow: hidden; background: var(--bg-secondary);
         }
-
         .card-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100%; height: 100%; object-fit: cover;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .image-card:hover .card-image img {
-            transform: scale(1.08);
-        }
-
-        /* Copy URL Button - ON THE PICTURE */
-        .copy-url-btn-on-image {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            background: rgba(10, 10, 15, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            border-radius: var(--radius-sm);
-            color: var(--accent-light);
-            font-family: inherit;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            opacity: 0;
-            transform: translateY(-8px);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-
-        .copy-url-btn-on-image:hover {
-            background: linear-gradient(135deg, var(--accent), #8b5cf6);
-            color: white;
-            border-color: transparent;
-            transform: translateY(0) scale(1.05);
-            box-shadow: 0 6px 20px var(--accent-glow);
-        }
-
-        .copy-url-btn-on-image.copied {
-            background: var(--success-bg);
-            color: var(--success);
-            border-color: rgba(34,197,94,0.3);
-        }
-
-        .image-card:hover .copy-url-btn-on-image {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Always visible on mobile */
-        @media (max-width: 768px) {
-            .copy-url-btn-on-image {
-                opacity: 1;
-                transform: translateY(0);
-                padding: 6px 10px;
-                font-size: 0.75rem;
-            }
-        }
+        .image-card:hover .card-image img { transform: scale(1.08); }
 
         .card-overlay {
-            position: absolute;
-            inset: 0;
+            position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(10,10,15,0.9) 0%, rgba(10,10,15,0.3) 50%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 16px;
-            gap: 8px;
+            opacity: 0; transition: opacity 0.3s;
+            display: flex; align-items: flex-end; justify-content: center;
+            padding: 16px; gap: 8px;
         }
-
-        .image-card:hover .card-overlay {
-            opacity: 1;
-        }
+        .image-card:hover .card-overlay { opacity: 1; }
 
         .card-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            padding: 4px 10px;
-            border-radius: 100px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            border: 1px solid rgba(255,255,255,0.1);
+            position: absolute; top: 12px; right: 12px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            padding: 4px 10px; border-radius: 100px; font-size: 0.7rem;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .card-badge.cloud {
-            background: rgba(59,130,246,0.2);
-            color: #60a5fa;
-            border-color: rgba(59,130,246,0.3);
-        }
-
-        .card-body {
-            padding: 18px;
-        }
-
+        .card-body { padding: 18px; }
         .card-title {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.95rem; font-weight: 600; margin-bottom: 6px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
         .card-meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;
+        }
+        .card-meta span { display: flex; align-items: center; gap: 4px; }
+
+        .card-url {
+            font-size: 0.75rem; color: var(--text-muted);
+            margin-bottom: 10px; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; font-family: 'JetBrains Mono', monospace;
         }
 
-        .card-meta span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+        .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .card-actions .btn { flex: 1; padding: 8px; font-size: 0.8rem; min-width: 0; }
 
-        /* Short URL Section */
-        .short-url-section {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 10px 12px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .short-url-section .url-icon {
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
-        .short-url-section .short-url {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--accent-light);
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .short-url-section .short-url:hover {
-            text-decoration: underline;
-        }
-
-        .short-url-section .copy-url-btn {
-            padding: 4px 10px;
-            font-size: 0.7rem;
-            flex-shrink: 0;
-        }
-
-        .short-url-section.generating {
-            opacity: 0.6;
-        }
-
-        .short-url-section.error {
-            border-color: rgba(239,68,68,0.3);
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .card-actions .btn {
-            flex: 1;
-            padding: 8px;
-            font-size: 0.8rem;
-        }
-
-        /* Code Snippet */
         .code-block {
-            margin-top: 12px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 12px;
-            position: relative;
-            overflow: hidden;
+            margin-top: 12px; background: var(--bg-primary);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 12px; position: relative; overflow: hidden;
         }
-
         .code-block pre {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: #a5b4fc;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-            line-height: 1.5;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+            color: #a5b4fc; overflow-x: auto; white-space: pre-wrap;
+            word-break: break-all; line-height: 1.5;
         }
-
         .code-block .copy-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 4px 10px;
-            font-size: 0.7rem;
-            opacity: 0;
-            transition: opacity 0.2s;
+            position: absolute; top: 8px; right: 8px;
+            padding: 4px 10px; font-size: 0.7rem; opacity: 0; transition: opacity 0.2s;
         }
+        .code-block:hover .copy-btn { opacity: 1; }
 
-        .code-block:hover .copy-btn {
-            opacity: 1;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 100px 20px;
-            color: var(--text-muted);
-        }
-
+        .empty-state { text-align: center; padding: 100px 20px; color: var(--text-muted); }
         .empty-state .empty-icon {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 24px;
-            background: var(--bg-card);
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
+            width: 100px; height: 100px; margin: 0 auto 24px;
+            background: var(--bg-card); border: 2px dashed var(--border);
+            border-radius: var(--radius-lg); display: flex;
+            align-items: center; justify-content: center; font-size: 40px;
         }
+        .empty-state h2 { color: var(--text-secondary); font-size: 1.25rem; margin-bottom: 8px; }
+        .empty-state p { font-size: 0.9rem; max-width: 400px; margin: 0 auto; }
 
-        .empty-state h2 {
-            color: var(--text-secondary);
-            font-size: 1.25rem;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            font-size: 0.9rem;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        /* Lightbox */
         .lightbox {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: rgba(10,10,15,0.95);
-            backdrop-filter: blur(20px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(10,10,15,0.95); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-
-        .lightbox.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .lightbox img {
-            max-width: 90vw;
-            max-height: 85vh;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-lg);
-            transform: scale(0.9);
-            transition: transform 0.3s;
-        }
-
-        .lightbox.active img {
-            transform: scale(1);
-        }
-
+        .lightbox.active { opacity: 1; pointer-events: all; }
+        .lightbox img { max-width: 90vw; max-height: 85vh; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); transform: scale(0.9); transition: transform 0.3s; }
+        .lightbox.active img { transform: scale(1); }
         .lightbox-close {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            width: 48px;
-            height: 48px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            color: var(--text-primary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
+            position: absolute; top: 24px; right: 24px; width: 48px; height: 48px;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 50%;
+            color: var(--text-primary); font-size: 1.5rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: var(--transition);
         }
-
-        .lightbox-close:hover {
-            background: var(--danger-bg);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-
+        .lightbox-close:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
         .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 56px;
-            height: 56px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            color: var(--text-primary);
-            font-size: 1.25rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 56px; height: 56px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: 50%;
+            color: var(--text-primary); font-size: 1.25rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: var(--transition);
         }
-
-        .lightbox-nav:hover {
-            background: var(--bg-hover);
-            border-color: var(--accent-light);
-        }
-
+        .lightbox-nav:hover { background: var(--bg-hover); border-color: var(--accent-light); }
         .lightbox-prev { left: 24px; }
         .lightbox-next { right: 24px; }
 
-        /* Toast */
         .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+            display: flex; flex-direction: column; gap: 10px;
         }
-
         .toast {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow-lg);
-            animation: toastIn 0.3s ease-out;
-            min-width: 280px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 14px 20px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: var(--shadow-lg); animation: toastIn 0.3s ease-out; min-width: 280px;
         }
-
-        @keyframes toastIn {
-            from {
-                transform: translateX(100px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .toast.out {
-            animation: toastOut 0.3s ease-in forwards;
-        }
-
-        @keyframes toastOut {
-            to {
-                transform: translateX(100px);
-                opacity: 0;
-            }
-        }
-
-        .toast-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
+        @keyframes toastIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast.out { animation: toastOut 0.3s ease-in forwards; }
+        @keyframes toastOut { to { transform: translateX(100px); opacity: 0; } }
+        .toast-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
         .toast-success .toast-icon { background: var(--success-bg); }
         .toast-error .toast-icon { background: var(--danger-bg); }
         .toast-info .toast-icon { background: var(--accent-glow); }
-        .toast-warning .toast-icon { background: var(--warning-bg); }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 2px; }
+        .toast-msg { font-size: 0.8rem; color: var(--text-secondary); }
 
-        .toast-content {
-            flex: 1;
-        }
-
-        .toast-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 2px;
-        }
-
-        .toast-msg {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        /* Progress Bar */
         .progress-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 3px;
+            position: fixed; top: 0; left: 0; height: 3px;
             background: linear-gradient(90deg, var(--accent), #8b5cf6);
-            z-index: 3000;
-            transition: width 0.2s;
+            z-index: 3000; transition: width 0.2s;
             box-shadow: 0 0 10px var(--accent-glow);
         }
 
-        /* Modal */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 1500;
-            background: rgba(10,10,15,0.8);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            padding: 20px;
+            position: fixed; inset: 0; z-index: 1500;
+            background: rgba(10,10,15,0.8); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; padding: 20px;
         }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
         .modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            width: 100%;
-            max-width: 480px;
-            box-shadow: var(--shadow-lg);
-            transform: scale(0.95);
-            transition: transform 0.2s;
-            overflow: hidden;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); width: 100%; max-width: 480px;
+            box-shadow: var(--shadow-lg); transform: scale(0.95);
+            transition: transform 0.2s; overflow: hidden;
         }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal-header { padding: 24px 24px 0; }
+        .modal-header h3 { font-size: 1.1rem; font-weight: 600; }
+        .modal-header p { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+        .modal-body { padding: 20px 24px; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding: 0 24px 24px; }
 
-        .modal-overlay.active .modal {
-            transform: scale(1);
+        /* Uploading state */
+        .uploading-overlay {
+            position: absolute; inset: 0; background: rgba(10,10,15,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 12px; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-
-        .modal-header {
-            padding: 24px 24px 0;
+        .uploading-overlay.active { opacity: 1; pointer-events: all; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--border);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .uploading-overlay p { color: var(--text-secondary); font-size: 0.9rem; }
 
-        .modal-header h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .modal-header p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-top: 4px;
-        }
-
-        .modal-body {
-            padding: 20px 24px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.9rem;
-            outline: none;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus, .form-group textarea:focus {
-            border-color: var(--accent-light);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            padding: 0 24px 24px;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .gallery {
-                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                gap: 16px;
-            }
-
-            .gallery.list-view .image-card {
-                grid-template-columns: 1fr;
-            }
-
-            .gallery.list-view .card-image {
-                height: 200px;
-                border-radius: var(--radius-md) var(--radius-md) 0 0;
-            }
-
-            .lightbox-nav {
-                display: none;
-            }
-
-            .stats-bar {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .header-actions {
-                flex-wrap: wrap;
-                width: 100%;
-            }
-
-            .toggle-group {
-                width: 100%;
-                justify-content: space-between;
-            }
+            .header { flex-direction: column; align-items: flex-start; }
+            .gallery { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+            .gallery.list-view .image-card { grid-template-columns: 1fr; }
+            .gallery.list-view .card-image { height: 200px; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+            .lightbox-nav { display: none; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 480px) {
-            .gallery {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-bar {
-                grid-template-columns: 1fr;
-            }
+            .gallery { grid-template-columns: 1fr; }
+            .stats-bar { grid-template-columns: 1fr; }
         }
     </style>
-<base target="_blank">
-<base target="_blank">
+    <base target="_blank">
 </head>
 <body>
     <div class="bg-mesh"></div>
@@ -1154,19 +438,15 @@
         <!-- Header -->
         <header class="header">
             <div class="brand">
-                <div class="brand-icon">📁</div>
+                <div class="brand-icon">🔗</div>
                 <div class="brand-text">
                     <h1>ProjectVault</h1>
-                    <span>Local Image Gallery for Projects</span>
+                    <span>Upload Images → Get URL Links</span>
                 </div>
             </div>
             <div class="header-actions">
-                <div class="toggle-group" title="Toggle between local storage and ImgBB cloud upload">
-                    <label>☁️ ImgBB Cloud</label>
-                    <div class="toggle-switch" id="cloudToggle" onclick="toggleCloudMode()"></div>
-                </div>
-                <button class="btn btn-ghost" onclick="exportGallery()">📥 Export</button>
-                <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📤 Import</button>
+                <button class="btn btn-ghost" onclick="exportGallery()">📥 Export JSON</button>
+                <button class="btn btn-ghost" onclick="document.getElementById('importInput').click()">📤 Import JSON</button>
                 <input type="file" id="importInput" accept=".json" style="display:none" onchange="importGallery(event)">
                 <button class="btn btn-danger btn-sm" onclick="confirmClearAll()">🗑️ Clear All</button>
             </div>
@@ -1176,11 +456,11 @@
         <div class="stats-bar">
             <div class="stat-item">
                 <div class="stat-value" id="statCount">0</div>
-                <div class="stat-label">Images Stored</div>
+                <div class="stat-label">Links Stored</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="statSize">0 MB</div>
-                <div class="stat-label">Total Size</div>
+                <div class="stat-value" id="statDomains">0</div>
+                <div class="stat-label">Unique Domains</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="statTypes">0</div>
@@ -1192,13 +472,17 @@
             </div>
         </div>
 
-        <!-- Upload -->
+        <!-- Upload Zone -->
         <section class="upload-section">
             <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="uploading-overlay" id="uploadingOverlay">
+                    <div class="spinner"></div>
+                    <p>Uploading to ImgBB...</p>
+                </div>
                 <div class="upload-content">
                     <div class="upload-icon">☁️</div>
                     <h3>Drop images here or click to browse</h3>
-                    <p id="uploadSubtitle">Images are stored locally in your browser using IndexedDB</p>
+                    <p>Files are uploaded to ImgBB and saved as URL links in your gallery</p>
                     <div class="upload-formats">
                         <span class="format-tag">JPG</span>
                         <span class="format-tag">PNG</span>
@@ -1207,11 +491,41 @@
                         <span class="format-tag">SVG</span>
                         <span class="format-tag">AVIF</span>
                     </div>
-                    <div class="storage-badge local" id="storageBadge">💾 Local Storage</div>
                 </div>
             </div>
             <input type="file" id="fileInput" multiple accept="image/*" onchange="handleFiles(event)">
         </section>
+
+        <!-- Add URL Toggle -->
+        <div class="add-url-section">
+            <div class="add-url-toggle" onclick="toggleUrlPanel()">
+                <span id="urlToggleIcon">▶</span> Or paste an existing image URL manually
+            </div>
+            <div class="add-url-panel" id="urlPanel">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Image URL *</label>
+                        <input type="url" id="addUrl" placeholder="https://raw.githubusercontent.com/.../image.png" onkeydown="if(event.key==='Enter') addImageUrl()">
+                    </div>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="addName" placeholder="e.g., Hero Background" onkeydown="if(event.key==='Enter') addImageUrl()">
+                    </div>
+                    <div class="form-group">
+                        <label>Project Tag</label>
+                        <input type="text" id="addProject" placeholder="e.g., Portfolio" onkeydown="if(event.key==='Enter') addImageUrl()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="addNotes" placeholder="Add any notes about this image..."></textarea>
+                </div>
+                <div class="add-actions">
+                    <button class="btn btn-primary" onclick="addImageUrl()">➕ Add to Gallery</button>
+                    <button class="btn btn-ghost" onclick="clearAddForm()">Clear</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Toolbar -->
         <div class="toolbar">
@@ -1227,9 +541,9 @@
         <!-- Gallery -->
         <div class="gallery" id="gallery">
             <div class="empty-state" id="emptyState">
-                <div class="empty-icon">🖼️</div>
+                <div class="empty-icon">🔗</div>
                 <h2>Your gallery is empty</h2>
-                <p>Upload images to start building your project asset library. Toggle cloud mode to use ImgBB.</p>
+                <p>Upload images or paste URLs above. All link data stays in your browser.</p>
             </div>
         </div>
     </div>
@@ -1252,10 +566,14 @@
     <div class="modal-overlay" id="editModal" onclick="closeModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>Edit Image Details</h3>
-                <p>Update the metadata for this image</p>
+                <h3>Edit Image Link</h3>
+                <p>Update the details for this image URL</p>
             </div>
             <div class="modal-body">
+                <div class="form-group">
+                    <label>Image URL</label>
+                    <input type="url" id="editUrl" placeholder="https://...">
+                </div>
                 <div class="form-group">
                     <label>Image Name</label>
                     <input type="text" id="editName" placeholder="e.g., Hero Background">
@@ -1266,7 +584,7 @@
                 </div>
                 <div class="form-group">
                     <label>Notes</label>
-                    <textarea id="editNotes" placeholder="Add any notes about usage..."></textarea>
+                    <textarea id="editNotes" placeholder="Add any notes..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1280,8 +598,8 @@
     <div class="modal-overlay" id="clearModal" onclick="closeClearModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h3>⚠️ Clear All Images?</h3>
-                <p>This will permanently delete all stored images. This action cannot be undone.</p>
+                <h3>⚠️ Clear All Links?</h3>
+                <p>This will permanently delete all stored image links. This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-ghost" onclick="closeClearModal()">Cancel</button>
@@ -1292,215 +610,58 @@
 
     <script>
         // ========================
-        // Configuration
+        // CONFIG - ImgBB API Key
         // ========================
         const IMGBB_API_KEY = '2bc35839818182922cb1152bb6a65320';
-        const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
-        const CLEANURI_API_URL = 'https://cleanuri.com/api/v1/shorten';
 
         // ========================
-        // Database Setup (IndexedDB)
+        // Storage (localStorage)
         // ========================
-        const DB_NAME = 'ProjectVaultDB';
-        const DB_VERSION = 2; // bumped for shortUrl store
-        const STORE_NAME = 'images';
-        const SHORTURL_STORE = 'shortUrls';
-        let db = null;
+        const STORAGE_KEY = 'projectvault_links';
         let currentImages = [];
         let currentView = 'grid';
         let lightboxIndex = 0;
         let editingId = null;
-        let cloudMode = false;
-        let shortUrlMap = new Map(); // in-memory map: code -> imageId
 
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => { 
-                    db = request.result; 
-                    loadShortUrlMap().then(resolve).catch(resolve);
-                };
-                request.onupgradeneeded = (e) => {
-                    const database = e.target.result;
-                    if (!database.objectStoreNames.contains(STORE_NAME)) {
-                        database.createObjectStore(STORE_NAME, { keyPath: 'id' });
-                    }
-                    if (!database.objectStoreNames.contains(SHORTURL_STORE)) {
-                        database.createObjectStore(SHORTURL_STORE, { keyPath: 'code' });
-                    }
-                };
-            });
-        }
-
-        function dbOperation(storeName, mode, callback) {
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction(storeName, mode);
-                const store = tx.objectStore(storeName);
-                const request = callback(store);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function saveImage(imageData) {
-            await dbOperation(STORE_NAME, 'readwrite', store => store.put(imageData));
-        }
-
-        async function getAllImages() {
-            return await dbOperation(STORE_NAME, 'readonly', store => store.getAll());
-        }
-
-        async function deleteImage(id) {
-            await dbOperation(STORE_NAME, 'readwrite', store => store.delete(id));
-        }
-
-        async function clearAllImages() {
-            await dbOperation(STORE_NAME, 'readwrite', store => store.clear());
-            await dbOperation(SHORTURL_STORE, 'readwrite', store => store.clear());
-            shortUrlMap.clear();
-        }
-
-        // ========================
-        // Short URL System
-        // ========================
-        function generateShortCode() {
-            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
-
-        async function saveShortUrl(code, imageId, longUrl) {
-            const entry = { code, imageId, longUrl, createdAt: new Date().toISOString() };
-            await dbOperation(SHORTURL_STORE, 'readwrite', store => store.put(entry));
-            shortUrlMap.set(code, imageId);
-        }
-
-        async function loadShortUrlMap() {
-            const entries = await dbOperation(SHORTURL_STORE, 'readonly', store => store.getAll());
-            shortUrlMap.clear();
-            for (const entry of entries) {
-                shortUrlMap.set(entry.code, entry.imageId);
-            }
-        }
-
-        async function getShortUrlEntry(code) {
-            return await dbOperation(SHORTURL_STORE, 'readonly', store => store.get(code));
-        }
-
-        async function generateUniqueShortCode(imageId, longUrl) {
-            let code;
-            let exists = true;
-            let attempts = 0;
-            while (exists && attempts < 10) {
-                code = generateShortCode();
-                const existing = await getShortUrlEntry(code);
-                exists = !!existing;
-                attempts++;
-            }
-            if (exists) {
-                // Fallback: use timestamp-based code
-                code = 'pv' + Date.now().toString(36).slice(-6);
-            }
-            await saveShortUrl(code, imageId, longUrl);
-            return code;
-        }
-
-        // Get the short URL string to display/copy
-        function getShortUrlString(code) {
-            // Since this is a local app, we create a pseudo-short URL
-            // In production, you'd use your own domain like https://yourdomain.com/s/abc123
-            // For now, we use a data URL approach or just return the code with a placeholder
-            return `https://pv.link/${code}`;
-        }
-
-        // ========================
-        // Cloud Mode Toggle
-        // ========================
-        function toggleCloudMode() {
-            cloudMode = !cloudMode;
-            const toggle = document.getElementById('cloudToggle');
-            const badge = document.getElementById('storageBadge');
-            const subtitle = document.getElementById('uploadSubtitle');
-
-            toggle.classList.toggle('active', cloudMode);
-
-            if (cloudMode) {
-                badge.className = 'storage-badge cloud';
-                badge.textContent = '☁️ ImgBB Cloud';
-                subtitle.textContent = 'Images will be uploaded to ImgBB cloud and stored as URLs';
-            } else {
-                badge.className = 'storage-badge local';
-                badge.textContent = '💾 Local Storage';
-                subtitle.textContent = 'Images are stored locally in your browser using IndexedDB';
-            }
-        }
-
-        // ========================
-        // URL Shortening (CleanURI) - Fallback
-        // ========================
-        async function getCleanUriShortUrl(longUrl) {
+        function loadStorage() {
             try {
-                const formData = new FormData();
-                formData.append('url', longUrl);
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch { return []; }
+        }
 
-                const response = await fetch(CLEANURI_API_URL, {
-                    method: 'POST',
-                    body: formData
-                });
+        function saveStorage(images) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+        }
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+        function getExtensionFromUrl(url) {
+            try {
+                const pathname = new URL(url).pathname;
+                const ext = pathname.split('.').pop().toLowerCase();
+                const valid = ['jpg','jpeg','png','gif','webp','svg','avif','bmp','ico'];
+                return valid.includes(ext) ? ext : 'img';
+            } catch { return 'img'; }
+        }
 
-                const result = await response.json();
-                return result.result_url || null;
-            } catch (err) {
-                console.error('CleanURI shortening failed:', err);
-                return null;
-            }
+        function getDomainFromUrl(url) {
+            try { return new URL(url).hostname; } catch { return 'unknown'; }
         }
 
         // ========================
-        // ImgBB API Upload
+        // Upload to ImgBB
         // ========================
-        async function uploadToImgBB(base64Image, filename) {
-            const base64Data = base64Image.split(',')[1];
-
+        async function uploadToImgBB(file) {
             const formData = new FormData();
+            formData.append('image', file);
             formData.append('key', IMGBB_API_KEY);
-            formData.append('image', base64Data);
-            formData.append('name', filename);
 
-            const response = await fetch(IMGBB_UPLOAD_URL, {
+            const res = await fetch('https://api.imgbb.com/1/upload', {
                 method: 'POST',
                 body: formData
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error?.message || 'Upload failed');
-            }
-
-            return {
-                url: result.data.url,
-                display_url: result.data.display_url,
-                thumb_url: result.data.thumb?.url || result.data.display_url,
-                delete_url: result.data.delete_url,
-                width: result.data.width,
-                height: result.data.height,
-                size: result.data.size,
-                expiration: result.data.expiration,
-                image_id: result.data.id
-            };
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error?.message || 'Upload failed');
+            return data.data.url; // direct image URL
         }
 
         // ========================
@@ -1514,9 +675,11 @@
         }
 
         async function processFiles(files) {
+            setUploading(true);
             showProgress();
             const total = files.length;
             let processed = 0;
+            let successCount = 0;
 
             for (const file of files) {
                 if (!file.type.startsWith('image/')) {
@@ -1524,134 +687,53 @@
                     continue;
                 }
 
-                if (file.size > 10 * 1024 * 1024) {
-                    showToast('Skipped: ' + file.name + ' (too large, max 10MB)', 'error');
+                if (file.size > 32 * 1024 * 1024) {
+                    showToast('Skipped: ' + file.name + ' (too large, max 32MB)', 'error');
                     continue;
                 }
 
                 try {
-                    const base64 = await fileToBase64(file);
+                    const imageUrl = await uploadToImgBB(file);
+                    const ext = getExtensionFromUrl(imageUrl) || file.name.split('.').pop().toLowerCase();
 
-                    let imageData = {
-                        id: Date.now() + Math.random().toString(36).substr(2, 9),
+                    const imageData = {
+                        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+                        url: imageUrl,
                         name: file.name.replace(/\.[^/.]+$/, ''),
                         originalName: file.name,
-                        type: file.type,
-                        size: file.size,
-                        data: base64,
                         project: '',
                         notes: '',
-                        createdAt: new Date().toISOString(),
-                        width: 0,
-                        height: 0,
-                        storage: 'local',
-                        shortUrl: null,
-                        shortUrlCode: null,
-                        shortUrlPending: false
+                        type: 'image/' + ext,
+                        ext: ext,
+                        domain: getDomainFromUrl(imageUrl),
+                        createdAt: new Date().toISOString()
                     };
 
-                    const dims = await getImageDimensions(base64);
-                    imageData.width = dims.width;
-                    imageData.height = dims.height;
-
-                    // Generate local short code immediately for ALL images
-                    const shortCode = await generateUniqueShortCode(imageData.id, base64);
-                    imageData.shortUrlCode = shortCode;
-                    imageData.shortUrl = getShortUrlString(shortCode);
-
-                    if (cloudMode) {
-                        showToast('Uploading to ImgBB: ' + file.name + '...', 'info');
-                        try {
-                            const imgbbData = await uploadToImgBB(base64, imageData.name);
-                            imageData.data = imgbbData.display_url;
-                            imageData.thumbUrl = imgbbData.thumb_url;
-                            imageData.deleteUrl = imgbbData.delete_url;
-                            imageData.imgbbId = imgbbData.image_id;
-                            imageData.width = imgbbData.width || imageData.width;
-                            imageData.height = imgbbData.height || imageData.height;
-                            imageData.size = imgbbData.size || imageData.size;
-                            imageData.storage = 'cloud';
-
-                            // Also try to get a real external short URL for the ImgBB link
-                            imageData.shortUrlPending = true;
-                            await saveImage(imageData);
-                            generateExternalShortUrl(imageData.id, imgbbData.display_url);
-                            showToast('Cloud upload complete: ' + file.name, 'success');
-                        } catch (err) {
-                            showToast('Cloud upload failed for ' + file.name + '. Saving locally.', 'warning');
-                            console.error('ImgBB upload error:', err);
-                            imageData.storage = 'local';
-                            await saveImage(imageData);
-                        }
-                    } else {
-                        await saveImage(imageData);
-                    }
-
-                    processed++;
-                    updateProgress((processed / total) * 100);
-                    showToast('Added: ' + file.name, 'success');
+                    currentImages.unshift(imageData);
+                    successCount++;
+                    showToast('Uploaded: ' + file.name, 'success');
                 } catch (err) {
-                    showToast('Failed: ' + file.name, 'error');
+                    showToast('Failed: ' + file.name + ' - ' + err.message, 'error');
                     console.error(err);
                 }
+
+                processed++;
+                updateProgress((processed / total) * 100);
             }
 
+            saveStorage(currentImages);
             hideProgress();
-            await loadGallery();
-        }
+            setUploading(false);
+            renderGallery();
+            updateStats();
 
-        async function generateExternalShortUrl(imageId, longUrl) {
-            try {
-                // Try CleanURI first
-                const cleanUri = await getCleanUriShortUrl(longUrl);
-                if (cleanUri) {
-                    const img = currentImages.find(i => i.id === imageId);
-                    if (img) {
-                        img.shortUrl = cleanUri;
-                        img.shortUrlPending = false;
-                        await saveImage(img);
-                        await loadGallery();
-                        showToast('Short URL generated!', 'success');
-                        return;
-                    }
-                }
-
-                // Fallback: use our local short code (already generated)
-                const img = currentImages.find(i => i.id === imageId);
-                if (img && img.shortUrlCode) {
-                    img.shortUrl = getShortUrlString(img.shortUrlCode);
-                    img.shortUrlPending = false;
-                    await saveImage(img);
-                    await loadGallery();
-                }
-            } catch (err) {
-                console.error('External short URL generation failed:', err);
-                const img = currentImages.find(i => i.id === imageId);
-                if (img && img.shortUrlCode) {
-                    img.shortUrl = getShortUrlString(img.shortUrlCode);
-                    img.shortUrlPending = false;
-                    await saveImage(img);
-                    await loadGallery();
-                }
+            if (successCount > 0) {
+                showToast(`Successfully uploaded ${successCount} image${successCount > 1 ? 's' : ''}!`, 'success');
             }
         }
 
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function getImageDimensions(base64) {
-            return new Promise(resolve => {
-                const img = new Image();
-                img.onload = () => resolve({ width: img.width, height: img.height });
-                img.onerror = () => resolve({ width: 0, height: 0 });
-                img.src = base64;
-            });
+        function setUploading(active) {
+            document.getElementById('uploadingOverlay').classList.toggle('active', active);
         }
 
         // ========================
@@ -1684,10 +766,67 @@
         }, false);
 
         // ========================
+        // Add URL Manually
+        // ========================
+        function toggleUrlPanel() {
+            const panel = document.getElementById('urlPanel');
+            const icon = document.getElementById('urlToggleIcon');
+            panel.classList.toggle('open');
+            icon.textContent = panel.classList.contains('open') ? '▼' : '▶';
+        }
+
+        function addImageUrl() {
+            const url = document.getElementById('addUrl').value.trim();
+            const name = document.getElementById('addName').value.trim();
+            const project = document.getElementById('addProject').value.trim();
+            const notes = document.getElementById('addNotes').value.trim();
+
+            if (!url) {
+                showToast('Please enter an image URL', 'error');
+                document.getElementById('addUrl').focus();
+                return;
+            }
+
+            let validUrl;
+            try { validUrl = new URL(url); } catch {
+                showToast('Please enter a valid URL', 'error');
+                return;
+            }
+
+            const ext = getExtensionFromUrl(url);
+            const imageData = {
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+                url: validUrl.href,
+                name: name || 'Untitled Image',
+                originalName: name || 'Untitled Image',
+                project: project,
+                notes: notes,
+                type: 'image/' + ext,
+                ext: ext,
+                domain: getDomainFromUrl(url),
+                createdAt: new Date().toISOString()
+            };
+
+            currentImages.unshift(imageData);
+            saveStorage(currentImages);
+            renderGallery();
+            updateStats();
+            clearAddForm();
+            showToast('Image link added!', 'success');
+        }
+
+        function clearAddForm() {
+            document.getElementById('addUrl').value = '';
+            document.getElementById('addName').value = '';
+            document.getElementById('addProject').value = '';
+            document.getElementById('addNotes').value = '';
+        }
+
+        // ========================
         // Gallery Rendering
         // ========================
-        async function loadGallery() {
-            currentImages = await getAllImages();
+        function loadGallery() {
+            currentImages = loadStorage();
             currentImages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             renderGallery();
             updateStats();
@@ -1699,7 +838,8 @@
             const filtered = currentImages.filter(img =>
                 img.name.toLowerCase().includes(searchTerm) ||
                 (img.project && img.project.toLowerCase().includes(searchTerm)) ||
-                img.type.toLowerCase().includes(searchTerm)
+                img.domain.toLowerCase().includes(searchTerm) ||
+                img.ext.toLowerCase().includes(searchTerm)
             );
 
             if (filtered.length === 0) {
@@ -1708,7 +848,7 @@
                         <div class="empty-icon">🔍</div>
                         <h2>${currentImages.length === 0 ? 'Your gallery is empty' : 'No matches found'}</h2>
                         <p>${currentImages.length === 0
-                            ? 'Upload images to start building your project asset library. Toggle cloud mode to use ImgBB.'
+                            ? 'Upload images or paste URLs above. All link data stays in your browser.'
                             : 'Try adjusting your search terms.'}</p>
                     </div>
                 `;
@@ -1718,98 +858,38 @@
             gallery.innerHTML = filtered.map((img, index) => `
                 <div class="image-card" data-id="${img.id}" style="animation-delay: ${index * 0.05}s">
                     <div class="card-image" onclick="openLightbox('${img.id}')">
-                        <!-- COPY URL BUTTON ON THE PICTURE -->
-                        <button class="copy-url-btn-on-image" id="copyBtn-${img.id}" onclick="event.stopPropagation(); copyImageUrlWithFeedback('${img.id}', this)">
-                            📋 Copy URL
-                        </button>
-                        <img src="${img.storage === 'cloud' && img.thumbUrl ? img.thumbUrl : img.data}" alt="${img.name}" loading="lazy">
-                        <span class="card-badge ${img.storage === 'cloud' ? 'cloud' : ''}">${img.storage === 'cloud' ? '☁️ Cloud' : img.type.split('/')[1].toUpperCase()}</span>
+                        <img src="${img.url}" alt="${img.name}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%2312121a%22 width=%22400%22 height=%22300%22/%3E%3Ctext fill=%22%23555566%22 font-family=%22sans-serif%22 font-size=%2214%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3EImage failed to load%3C/text%3E%3C/svg%3E'">
+                        <span class="card-badge">${img.ext.toUpperCase()}</span>
                         <div class="card-overlay">
                             <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openLightbox('${img.id}')">🔍 View</button>
-                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); copyImageUrl('${img.id}')">📋 Copy</button>
+                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); copyUrl('${img.id}')">📋 Copy URL</button>
                         </div>
                     </div>
                     <div class="card-body">
                         <div class="card-title" title="${img.name}">${img.name}</div>
                         <div class="card-meta">
-                            <span>📐 ${img.width || '?'}×${img.height || '?'}</span>
-                            <span>💾 ${formatSize(img.size)}</span>
+                            <span>🌐 ${img.domain}</span>
                             <span>📅 ${formatDate(img.createdAt)}</span>
                         </div>
-                        ${renderShortUrlSection(img)}
+                        <div class="card-url" title="${img.url}">${img.url}</div>
                         ${img.project ? `<div style="font-size:0.75rem;color:var(--accent-light);margin-bottom:8px;">🏷️ ${img.project}</div>` : ''}
-                        ${img.storage === 'cloud' && img.deleteUrl ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px;">🗑️ <a href="${img.deleteUrl}" target="_blank" style="color:inherit;">Delete from ImgBB</a></div>` : ''}
                         <div class="card-actions">
                             <button class="btn btn-ghost btn-sm" onclick="copyHtml('${img.id}')">HTML</button>
                             <button class="btn btn-ghost btn-sm" onclick="copyCss('${img.id}')">CSS</button>
-                            <button class="btn btn-ghost btn-sm" onclick="copyDataUrl('${img.id}')">${img.storage === 'cloud' ? 'URL' : 'Data URL'}</button>
+                            <button class="btn btn-ghost btn-sm" onclick="copyUrl('${img.id}')">URL</button>
                             <button class="btn btn-ghost btn-sm" onclick="openEdit('${img.id}')">✏️</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteImageCard('${img.id}')">🗑️</button>
                         </div>
                         <div class="code-block">
                             <div class="copy-btn btn btn-ghost btn-sm" onclick="copyText(this.parentElement.querySelector('pre').textContent)">Copy</div>
-                            <pre>&lt;img src="${img.data.substring(0, 60)}..." alt="${img.name}"&gt;</pre>
+                            <pre>&lt;img src="${img.url}" alt="${img.name}"&gt;</pre>
                         </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        function renderShortUrlSection(img) {
-            if (!img.shortUrl && !img.shortUrlCode && !img.shortUrlPending) {
-                return '';
-            }
-
-            if (img.shortUrlPending) {
-                return `
-                    <div class="short-url-section generating">
-                        <span class="url-icon">⏳</span>
-                        <span class="short-url">Generating short URL...</span>
-                    </div>
-                `;
-            }
-
-            const displayUrl = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : null);
-
-            if (displayUrl) {
-                return `
-                    <div class="short-url-section">
-                        <span class="url-icon">🔗</span>
-                        <a href="${displayUrl}" target="_blank" class="short-url" title="${displayUrl}">${displayUrl}</a>
-                        <button class="btn btn-primary btn-sm copy-url-btn" onclick="copyText('${displayUrl}')">Copy</button>
-                    </div>
-                `;
-            }
-
-            return `
-                <div class="short-url-section error">
-                    <span class="url-icon">⚠️</span>
-                    <span class="short-url" style="color:var(--text-muted);">Short URL unavailable</span>
-                    <button class="btn btn-ghost btn-sm copy-url-btn" onclick="retryShortUrl('${img.id}')">Retry</button>
-                </div>
-            `;
-        }
-
-        async function retryShortUrl(imageId) {
-            const img = currentImages.find(i => i.id === imageId);
-            if (!img) return;
-
-            if (img.storage === 'cloud' && img.data) {
-                img.shortUrlPending = true;
-                await saveImage(img);
-                renderGallery();
-                generateExternalShortUrl(imageId, img.data);
-            } else if (img.shortUrlCode) {
-                img.shortUrl = getShortUrlString(img.shortUrlCode);
-                await saveImage(img);
-                renderGallery();
-                showToast('Short URL ready!', 'success');
-            }
-        }
-
-        function filterGallery() {
-            renderGallery();
-        }
+        function filterGallery() { renderGallery(); }
 
         function setView(view) {
             currentView = view;
@@ -1821,48 +901,26 @@
         // ========================
         // Image Actions
         // ========================
-        async function deleteImageCard(id) {
-            if (!confirm('Delete this image?')) return;
-            await deleteImage(id);
-            await loadGallery();
-            showToast('Image deleted', 'success');
+        function deleteImageCard(id) {
+            if (!confirm('Delete this image link?')) return;
+            currentImages = currentImages.filter(i => i.id !== id);
+            saveStorage(currentImages);
+            renderGallery();
+            updateStats();
+            showToast('Image link deleted', 'success');
         }
 
-        function copyImageUrl(id) {
+        function copyUrl(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-
-            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
-            copyText(urlToCopy);
+            copyText(img.url);
             showToast('URL copied to clipboard!', 'success');
-        }
-
-        // Copy URL with visual feedback on the button itself
-        function copyImageUrlWithFeedback(id, btnElement) {
-            const img = currentImages.find(i => i.id === id);
-            if (!img || !btnElement) return;
-
-            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
-            copyText(urlToCopy);
-
-            // Visual feedback
-            const originalText = btnElement.innerHTML;
-            btnElement.innerHTML = '✓ Copied!';
-            btnElement.classList.add('copied');
-
-            showToast('URL copied to clipboard!', 'success');
-
-            setTimeout(() => {
-                btnElement.innerHTML = originalText;
-                btnElement.classList.remove('copied');
-            }, 2000);
         }
 
         function copyHtml(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const src = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
-            const html = `<img src="${src}" alt="${img.name}" width="${img.width}" height="${img.height}">`;
+            const html = `<img src="${img.url}" alt="${img.name}">`;
             copyText(html);
             showToast('HTML tag copied!', 'success');
         }
@@ -1870,18 +928,9 @@
         function copyCss(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const src = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
-            const css = `background-image: url("${src}");\nbackground-size: cover;\nbackground-position: center;`;
+            const css = `background-image: url("${img.url}");\nbackground-size: cover;\nbackground-position: center;`;
             copyText(css);
             showToast('CSS snippet copied!', 'success');
-        }
-
-        function copyDataUrl(id) {
-            const img = currentImages.find(i => i.id === id);
-            if (!img) return;
-            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
-            copyText(urlToCopy);
-            showToast('URL copied to clipboard!', 'success');
         }
 
         function copyText(text) {
@@ -1902,6 +951,7 @@
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
             editingId = id;
+            document.getElementById('editUrl').value = img.url;
             document.getElementById('editName').value = img.name;
             document.getElementById('editProject').value = img.project || '';
             document.getElementById('editNotes').value = img.notes || '';
@@ -1915,17 +965,31 @@
             }
         }
 
-        async function saveEdit() {
+        function saveEdit() {
             if (!editingId) return;
             const img = currentImages.find(i => i.id === editingId);
             if (!img) return;
 
+            const newUrl = document.getElementById('editUrl').value.trim();
+            if (!newUrl) { showToast('URL cannot be empty', 'error'); return; }
+
+            let validUrl;
+            try { validUrl = new URL(newUrl); } catch {
+                showToast('Please enter a valid URL', 'error');
+                return;
+            }
+
+            img.url = validUrl.href;
             img.name = document.getElementById('editName').value || img.originalName;
             img.project = document.getElementById('editProject').value;
             img.notes = document.getElementById('editNotes').value;
+            img.domain = getDomainFromUrl(img.url);
+            img.ext = getExtensionFromUrl(img.url);
+            img.type = 'image/' + img.ext;
 
-            await saveImage(img);
-            await loadGallery();
+            saveStorage(currentImages);
+            renderGallery();
+            updateStats();
             closeModal();
             showToast('Changes saved!', 'success');
         }
@@ -1958,7 +1022,7 @@
 
         function updateLightbox() {
             const img = currentImages[lightboxIndex];
-            document.getElementById('lightboxImg').src = img.data;
+            document.getElementById('lightboxImg').src = img.url;
             document.getElementById('lightboxImg').alt = img.name;
         }
 
@@ -1982,51 +1046,59 @@
             }
         }
 
-        async function clearAll() {
-            await clearAllImages();
+        function clearAll() {
             currentImages = [];
+            saveStorage(currentImages);
             renderGallery();
             updateStats();
             closeClearModal();
-            showToast('All images cleared', 'success');
+            showToast('All links cleared', 'success');
         }
 
         // ========================
         // Export / Import
         // ========================
-        async function exportGallery() {
-            const data = await getAllImages();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        function exportGallery() {
+            const blob = new Blob([JSON.stringify(currentImages, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `projectvault-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `projectvault-links-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Gallery exported!', 'success');
         }
 
-        async function importGallery(event) {
+        function importGallery(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                if (!Array.isArray(data)) throw new Error('Invalid format');
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) throw new Error('Invalid format');
 
-                for (const img of data) {
-                    if (img.id && img.data) {
-                        img.id = Date.now() + Math.random().toString(36).substr(2, 9);
-                        await saveImage(img);
+                    let added = 0;
+                    for (const img of data) {
+                        if (img.url) {
+                            img.id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                            img.domain = getDomainFromUrl(img.url);
+                            img.ext = img.ext || getExtensionFromUrl(img.url);
+                            img.type = img.type || 'image/' + img.ext;
+                            currentImages.push(img);
+                            added++;
+                        }
                     }
-                }
 
-                await loadGallery();
-                showToast(`Imported ${data.length} images!`, 'success');
-            } catch (err) {
-                showToast('Import failed: Invalid file', 'error');
-            }
+                    saveStorage(currentImages);
+                    loadGallery();
+                    showToast(`Imported ${added} links!`, 'success');
+                } catch (err) {
+                    showToast('Import failed: Invalid file', 'error');
+                }
+            };
+            reader.readAsText(file);
             event.target.value = '';
         }
 
@@ -2036,22 +1108,14 @@
         function updateStats() {
             document.getElementById('statCount').textContent = currentImages.length;
 
-            const totalSize = currentImages.reduce((sum, img) => sum + (img.size || 0), 0);
-            document.getElementById('statSize').textContent = formatSize(totalSize);
+            const domains = new Set(currentImages.map(i => i.domain));
+            document.getElementById('statDomains').textContent = domains.size;
 
-            const types = new Set(currentImages.map(i => i.type.split('/')[1]));
+            const types = new Set(currentImages.map(i => i.ext));
             document.getElementById('statTypes').textContent = types.size;
 
             const projects = new Set(currentImages.filter(i => i.project).map(i => i.project));
             document.getElementById('statProjects').textContent = projects.size;
-        }
-
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
         function formatDate(iso) {
@@ -2083,8 +1147,8 @@
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
-            const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
-            const titles = { success: 'Success', error: 'Error', info: 'Info', warning: 'Warning' };
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            const titles = { success: 'Success', error: 'Error', info: 'Info' };
 
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
@@ -2106,17 +1170,10 @@
         // ========================
         // Init
         // ========================
-        (async function init() {
-            try {
-                await initDB();
-                await loadGallery();
-                showToast('ProjectVault ready! Every image gets a short URL.', 'info');
-            } catch (err) {
-                showToast('Database error. Try refreshing.', 'error');
-                console.error(err);
-            }
+        (function init() {
+            loadGallery();
+            showToast('ProjectVault ready! Upload images to ImgBB.', 'info');
         })();
     </script>
 </body>
 </html>
- 
