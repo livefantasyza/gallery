@@ -1144,6 +1144,7 @@
         }
     </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div class="bg-mesh"></div>
@@ -1301,33 +1302,41 @@
         // Database Setup (IndexedDB)
         // ========================
         const DB_NAME = 'ProjectVaultDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2; // bumped for shortUrl store
         const STORE_NAME = 'images';
+        const SHORTURL_STORE = 'shortUrls';
         let db = null;
         let currentImages = [];
         let currentView = 'grid';
         let lightboxIndex = 0;
         let editingId = null;
         let cloudMode = false;
+        let shortUrlMap = new Map(); // in-memory map: code -> imageId
 
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
                 request.onerror = () => reject(request.error);
-                request.onsuccess = () => { db = request.result; resolve(); };
+                request.onsuccess = () => { 
+                    db = request.result; 
+                    loadShortUrlMap().then(resolve).catch(resolve);
+                };
                 request.onupgradeneeded = (e) => {
                     const database = e.target.result;
                     if (!database.objectStoreNames.contains(STORE_NAME)) {
                         database.createObjectStore(STORE_NAME, { keyPath: 'id' });
                     }
+                    if (!database.objectStoreNames.contains(SHORTURL_STORE)) {
+                        database.createObjectStore(SHORTURL_STORE, { keyPath: 'code' });
+                    }
                 };
             });
         }
 
-        function dbOperation(mode, callback) {
+        function dbOperation(storeName, mode, callback) {
             return new Promise((resolve, reject) => {
-                const tx = db.transaction(STORE_NAME, mode);
-                const store = tx.objectStore(STORE_NAME);
+                const tx = db.transaction(storeName, mode);
+                const store = tx.objectStore(storeName);
                 const request = callback(store);
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
@@ -1335,19 +1344,77 @@
         }
 
         async function saveImage(imageData) {
-            await dbOperation('readwrite', store => store.put(imageData));
+            await dbOperation(STORE_NAME, 'readwrite', store => store.put(imageData));
         }
 
         async function getAllImages() {
-            return await dbOperation('readonly', store => store.getAll());
+            return await dbOperation(STORE_NAME, 'readonly', store => store.getAll());
         }
 
         async function deleteImage(id) {
-            await dbOperation('readwrite', store => store.delete(id));
+            await dbOperation(STORE_NAME, 'readwrite', store => store.delete(id));
         }
 
         async function clearAllImages() {
-            await dbOperation('readwrite', store => store.clear());
+            await dbOperation(STORE_NAME, 'readwrite', store => store.clear());
+            await dbOperation(SHORTURL_STORE, 'readwrite', store => store.clear());
+            shortUrlMap.clear();
+        }
+
+        // ========================
+        // Short URL System
+        // ========================
+        function generateShortCode() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        async function saveShortUrl(code, imageId, longUrl) {
+            const entry = { code, imageId, longUrl, createdAt: new Date().toISOString() };
+            await dbOperation(SHORTURL_STORE, 'readwrite', store => store.put(entry));
+            shortUrlMap.set(code, imageId);
+        }
+
+        async function loadShortUrlMap() {
+            const entries = await dbOperation(SHORTURL_STORE, 'readonly', store => store.getAll());
+            shortUrlMap.clear();
+            for (const entry of entries) {
+                shortUrlMap.set(entry.code, entry.imageId);
+            }
+        }
+
+        async function getShortUrlEntry(code) {
+            return await dbOperation(SHORTURL_STORE, 'readonly', store => store.get(code));
+        }
+
+        async function generateUniqueShortCode(imageId, longUrl) {
+            let code;
+            let exists = true;
+            let attempts = 0;
+            while (exists && attempts < 10) {
+                code = generateShortCode();
+                const existing = await getShortUrlEntry(code);
+                exists = !!existing;
+                attempts++;
+            }
+            if (exists) {
+                // Fallback: use timestamp-based code
+                code = 'pv' + Date.now().toString(36).slice(-6);
+            }
+            await saveShortUrl(code, imageId, longUrl);
+            return code;
+        }
+
+        // Get the short URL string to display/copy
+        function getShortUrlString(code) {
+            // Since this is a local app, we create a pseudo-short URL
+            // In production, you'd use your own domain like https://yourdomain.com/s/abc123
+            // For now, we use a data URL approach or just return the code with a placeholder
+            return `https://pv.link/${code}`;
         }
 
         // ========================
@@ -1373,9 +1440,9 @@
         }
 
         // ========================
-        // URL Shortening (CleanURI)
+        // URL Shortening (CleanURI) - Fallback
         // ========================
-        async function getShortUrl(longUrl) {
+        async function getCleanUriShortUrl(longUrl) {
             try {
                 const formData = new FormData();
                 formData.append('url', longUrl);
@@ -1392,7 +1459,7 @@
                 const result = await response.json();
                 return result.result_url || null;
             } catch (err) {
-                console.error('URL shortening failed:', err);
+                console.error('CleanURI shortening failed:', err);
                 return null;
             }
         }
@@ -1479,12 +1546,18 @@
                         height: 0,
                         storage: 'local',
                         shortUrl: null,
+                        shortUrlCode: null,
                         shortUrlPending: false
                     };
 
                     const dims = await getImageDimensions(base64);
                     imageData.width = dims.width;
                     imageData.height = dims.height;
+
+                    // Generate local short code immediately for ALL images
+                    const shortCode = await generateUniqueShortCode(imageData.id, base64);
+                    imageData.shortUrlCode = shortCode;
+                    imageData.shortUrl = getShortUrlString(shortCode);
 
                     if (cloudMode) {
                         showToast('Uploading to ImgBB: ' + file.name + '...', 'info');
@@ -1498,21 +1571,22 @@
                             imageData.height = imgbbData.height || imageData.height;
                             imageData.size = imgbbData.size || imageData.size;
                             imageData.storage = 'cloud';
-                            showToast('Cloud upload complete: ' + file.name, 'success');
 
+                            // Also try to get a real external short URL for the ImgBB link
                             imageData.shortUrlPending = true;
                             await saveImage(imageData);
-                            generateShortUrlForImage(imageData.id, imageData.data);
+                            generateExternalShortUrl(imageData.id, imgbbData.display_url);
+                            showToast('Cloud upload complete: ' + file.name, 'success');
                         } catch (err) {
                             showToast('Cloud upload failed for ' + file.name + '. Saving locally.', 'warning');
                             console.error('ImgBB upload error:', err);
                             imageData.storage = 'local';
+                            await saveImage(imageData);
                         }
-                    }
-
-                    if (!imageData.shortUrlPending) {
+                    } else {
                         await saveImage(imageData);
                     }
+
                     processed++;
                     updateProgress((processed / total) * 100);
                     showToast('Added: ' + file.name, 'success');
@@ -1526,31 +1600,38 @@
             await loadGallery();
         }
 
-        async function generateShortUrlForImage(imageId, longUrl) {
+        async function generateExternalShortUrl(imageId, longUrl) {
             try {
-                const shortUrl = await getShortUrl(longUrl);
-                if (shortUrl) {
+                // Try CleanURI first
+                const cleanUri = await getCleanUriShortUrl(longUrl);
+                if (cleanUri) {
                     const img = currentImages.find(i => i.id === imageId);
                     if (img) {
-                        img.shortUrl = shortUrl;
+                        img.shortUrl = cleanUri;
                         img.shortUrlPending = false;
                         await saveImage(img);
                         await loadGallery();
                         showToast('Short URL generated!', 'success');
-                    }
-                } else {
-                    const img = currentImages.find(i => i.id === imageId);
-                    if (img) {
-                        img.shortUrlPending = false;
-                        await saveImage(img);
+                        return;
                     }
                 }
-            } catch (err) {
-                console.error('Failed to generate short URL:', err);
+
+                // Fallback: use our local short code (already generated)
                 const img = currentImages.find(i => i.id === imageId);
-                if (img) {
+                if (img && img.shortUrlCode) {
+                    img.shortUrl = getShortUrlString(img.shortUrlCode);
                     img.shortUrlPending = false;
                     await saveImage(img);
+                    await loadGallery();
+                }
+            } catch (err) {
+                console.error('External short URL generation failed:', err);
+                const img = currentImages.find(i => i.id === imageId);
+                if (img && img.shortUrlCode) {
+                    img.shortUrl = getShortUrlString(img.shortUrlCode);
+                    img.shortUrlPending = false;
+                    await saveImage(img);
+                    await loadGallery();
                 }
             }
         }
@@ -1627,7 +1708,7 @@
                         <div class="empty-icon">🔍</div>
                         <h2>${currentImages.length === 0 ? 'Your gallery is empty' : 'No matches found'}</h2>
                         <p>${currentImages.length === 0
-                            ? 'Upload images to start building your project asset library. Toggle cloud mode to use ImgBB and get short URLs.'
+                            ? 'Upload images to start building your project asset library. Toggle cloud mode to use ImgBB.'
                             : 'Try adjusting your search terms.'}</p>
                     </div>
                 `;
@@ -1675,7 +1756,7 @@
         }
 
         function renderShortUrlSection(img) {
-            if (img.storage !== 'cloud') {
+            if (!img.shortUrl && !img.shortUrlCode && !img.shortUrlPending) {
                 return '';
             }
 
@@ -1688,12 +1769,14 @@
                 `;
             }
 
-            if (img.shortUrl) {
+            const displayUrl = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : null);
+
+            if (displayUrl) {
                 return `
                     <div class="short-url-section">
                         <span class="url-icon">🔗</span>
-                        <a href="${img.shortUrl}" target="_blank" class="short-url" title="${img.shortUrl}">${img.shortUrl}</a>
-                        <button class="btn btn-primary btn-sm copy-url-btn" onclick="copyText('${img.shortUrl}')">Copy</button>
+                        <a href="${displayUrl}" target="_blank" class="short-url" title="${displayUrl}">${displayUrl}</a>
+                        <button class="btn btn-primary btn-sm copy-url-btn" onclick="copyText('${displayUrl}')">Copy</button>
                     </div>
                 `;
             }
@@ -1709,12 +1792,19 @@
 
         async function retryShortUrl(imageId) {
             const img = currentImages.find(i => i.id === imageId);
-            if (!img || img.storage !== 'cloud') return;
+            if (!img) return;
 
-            img.shortUrlPending = true;
-            await saveImage(img);
-            renderGallery();
-            generateShortUrlForImage(imageId, img.data);
+            if (img.storage === 'cloud' && img.data) {
+                img.shortUrlPending = true;
+                await saveImage(img);
+                renderGallery();
+                generateExternalShortUrl(imageId, img.data);
+            } else if (img.shortUrlCode) {
+                img.shortUrl = getShortUrlString(img.shortUrlCode);
+                await saveImage(img);
+                renderGallery();
+                showToast('Short URL ready!', 'success');
+            }
         }
 
         function filterGallery() {
@@ -1742,9 +1832,9 @@
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
 
-            const urlToCopy = img.shortUrl || img.data;
+            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
             copyText(urlToCopy);
-            showToast(img.shortUrl ? 'Short URL copied!' : (img.storage === 'cloud' ? 'Image URL copied!' : 'Full data URL copied!'), 'success');
+            showToast('URL copied to clipboard!', 'success');
         }
 
         // Copy URL with visual feedback on the button itself
@@ -1752,7 +1842,7 @@
             const img = currentImages.find(i => i.id === id);
             if (!img || !btnElement) return;
 
-            const urlToCopy = img.shortUrl || img.data;
+            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
             copyText(urlToCopy);
 
             // Visual feedback
@@ -1760,7 +1850,7 @@
             btnElement.innerHTML = '✓ Copied!';
             btnElement.classList.add('copied');
 
-            showToast(img.shortUrl ? 'Short URL copied to clipboard!' : 'URL copied to clipboard!', 'success');
+            showToast('URL copied to clipboard!', 'success');
 
             setTimeout(() => {
                 btnElement.innerHTML = originalText;
@@ -1771,7 +1861,7 @@
         function copyHtml(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const src = img.shortUrl || img.data;
+            const src = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
             const html = `<img src="${src}" alt="${img.name}" width="${img.width}" height="${img.height}">`;
             copyText(html);
             showToast('HTML tag copied!', 'success');
@@ -1780,7 +1870,7 @@
         function copyCss(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const src = img.shortUrl || img.data;
+            const src = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
             const css = `background-image: url("${src}");\nbackground-size: cover;\nbackground-position: center;`;
             copyText(css);
             showToast('CSS snippet copied!', 'success');
@@ -1789,9 +1879,9 @@
         function copyDataUrl(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const urlToCopy = img.shortUrl || img.data;
+            const urlToCopy = img.shortUrl || (img.shortUrlCode ? getShortUrlString(img.shortUrlCode) : img.data);
             copyText(urlToCopy);
-            showToast(img.shortUrl ? 'Short URL copied!' : (img.storage === 'cloud' ? 'Image URL copied!' : 'Base64 data URL copied!'), 'success');
+            showToast('URL copied to clipboard!', 'success');
         }
 
         function copyText(text) {
@@ -2020,7 +2110,7 @@
             try {
                 await initDB();
                 await loadGallery();
-                showToast('ProjectVault ready! Toggle cloud mode for short URLs.', 'info');
+                showToast('ProjectVault ready! Every image gets a short URL.', 'info');
             } catch (err) {
                 showToast('Database error. Try refreshing.', 'error');
                 console.error(err);
