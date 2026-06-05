@@ -575,6 +575,60 @@
             transform: scale(1.08);
         }
 
+        /* Copy URL Button - ON THE PICTURE */
+        .copy-url-btn-on-image {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: var(--radius-sm);
+            color: var(--accent-light);
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .copy-url-btn-on-image:hover {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            border-color: transparent;
+            transform: translateY(0) scale(1.05);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .copy-url-btn-on-image.copied {
+            background: var(--success-bg);
+            color: var(--success);
+            border-color: rgba(34,197,94,0.3);
+        }
+
+        .image-card:hover .copy-url-btn-on-image {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Always visible on mobile */
+        @media (max-width: 768px) {
+            .copy-url-btn-on-image {
+                opacity: 1;
+                transform: translateY(0);
+                padding: 6px 10px;
+                font-size: 0.75rem;
+            }
+        }
+
         .card-overlay {
             position: absolute;
             inset: 0;
@@ -633,13 +687,60 @@
             gap: 12px;
             font-size: 0.75rem;
             color: var(--text-muted);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .card-meta span {
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+
+        /* Short URL Section */
+        .short-url-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .short-url-section .url-icon {
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .short-url-section .short-url {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-light);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .short-url-section .short-url:hover {
+            text-decoration: underline;
+        }
+
+        .short-url-section .copy-url-btn {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            flex-shrink: 0;
+        }
+
+        .short-url-section.generating {
+            opacity: 0.6;
+        }
+
+        .short-url-section.error {
+            border-color: rgba(239,68,68,0.3);
         }
 
         .card-actions {
@@ -1043,7 +1144,6 @@
         }
     </style>
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
     <div class="bg-mesh"></div>
@@ -1128,7 +1228,7 @@
             <div class="empty-state" id="emptyState">
                 <div class="empty-icon">🖼️</div>
                 <h2>Your gallery is empty</h2>
-                <p>Upload images to start building your project asset library. All data stays on your device.</p>
+                <p>Upload images to start building your project asset library. Toggle cloud mode to use ImgBB.</p>
             </div>
         </div>
     </div>
@@ -1195,6 +1295,7 @@
         // ========================
         const IMGBB_API_KEY = '2bc35839818182922cb1152bb6a65320';
         const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+        const CLEANURI_API_URL = 'https://cleanuri.com/api/v1/shorten';
 
         // ========================
         // Database Setup (IndexedDB)
@@ -1272,10 +1373,34 @@
         }
 
         // ========================
+        // URL Shortening (CleanURI)
+        // ========================
+        async function getShortUrl(longUrl) {
+            try {
+                const formData = new FormData();
+                formData.append('url', longUrl);
+
+                const response = await fetch(CLEANURI_API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return result.result_url || null;
+            } catch (err) {
+                console.error('URL shortening failed:', err);
+                return null;
+            }
+        }
+
+        // ========================
         // ImgBB API Upload
         // ========================
         async function uploadToImgBB(base64Image, filename) {
-            // Remove data URL prefix to get pure base64
             const base64Data = base64Image.split(',')[1];
 
             const formData = new FormData();
@@ -1352,15 +1477,15 @@
                         createdAt: new Date().toISOString(),
                         width: 0,
                         height: 0,
-                        storage: 'local'
+                        storage: 'local',
+                        shortUrl: null,
+                        shortUrlPending: false
                     };
 
-                    // Get dimensions from local image first
                     const dims = await getImageDimensions(base64);
                     imageData.width = dims.width;
                     imageData.height = dims.height;
 
-                    // If cloud mode is enabled, upload to ImgBB
                     if (cloudMode) {
                         showToast('Uploading to ImgBB: ' + file.name + '...', 'info');
                         try {
@@ -1374,15 +1499,20 @@
                             imageData.size = imgbbData.size || imageData.size;
                             imageData.storage = 'cloud';
                             showToast('Cloud upload complete: ' + file.name, 'success');
+
+                            imageData.shortUrlPending = true;
+                            await saveImage(imageData);
+                            generateShortUrlForImage(imageData.id, imageData.data);
                         } catch (err) {
                             showToast('Cloud upload failed for ' + file.name + '. Saving locally.', 'warning');
                             console.error('ImgBB upload error:', err);
-                            // Fall back to local storage
                             imageData.storage = 'local';
                         }
                     }
 
-                    await saveImage(imageData);
+                    if (!imageData.shortUrlPending) {
+                        await saveImage(imageData);
+                    }
                     processed++;
                     updateProgress((processed / total) * 100);
                     showToast('Added: ' + file.name, 'success');
@@ -1394,6 +1524,35 @@
 
             hideProgress();
             await loadGallery();
+        }
+
+        async function generateShortUrlForImage(imageId, longUrl) {
+            try {
+                const shortUrl = await getShortUrl(longUrl);
+                if (shortUrl) {
+                    const img = currentImages.find(i => i.id === imageId);
+                    if (img) {
+                        img.shortUrl = shortUrl;
+                        img.shortUrlPending = false;
+                        await saveImage(img);
+                        await loadGallery();
+                        showToast('Short URL generated!', 'success');
+                    }
+                } else {
+                    const img = currentImages.find(i => i.id === imageId);
+                    if (img) {
+                        img.shortUrlPending = false;
+                        await saveImage(img);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to generate short URL:', err);
+                const img = currentImages.find(i => i.id === imageId);
+                if (img) {
+                    img.shortUrlPending = false;
+                    await saveImage(img);
+                }
+            }
         }
 
         function fileToBase64(file) {
@@ -1468,7 +1627,7 @@
                         <div class="empty-icon">🔍</div>
                         <h2>${currentImages.length === 0 ? 'Your gallery is empty' : 'No matches found'}</h2>
                         <p>${currentImages.length === 0
-                            ? 'Upload images to start building your project asset library. Toggle cloud mode to use ImgBB.'
+                            ? 'Upload images to start building your project asset library. Toggle cloud mode to use ImgBB and get short URLs.'
                             : 'Try adjusting your search terms.'}</p>
                     </div>
                 `;
@@ -1478,6 +1637,10 @@
             gallery.innerHTML = filtered.map((img, index) => `
                 <div class="image-card" data-id="${img.id}" style="animation-delay: ${index * 0.05}s">
                     <div class="card-image" onclick="openLightbox('${img.id}')">
+                        <!-- COPY URL BUTTON ON THE PICTURE -->
+                        <button class="copy-url-btn-on-image" id="copyBtn-${img.id}" onclick="event.stopPropagation(); copyImageUrlWithFeedback('${img.id}', this)">
+                            📋 Copy URL
+                        </button>
                         <img src="${img.storage === 'cloud' && img.thumbUrl ? img.thumbUrl : img.data}" alt="${img.name}" loading="lazy">
                         <span class="card-badge ${img.storage === 'cloud' ? 'cloud' : ''}">${img.storage === 'cloud' ? '☁️ Cloud' : img.type.split('/')[1].toUpperCase()}</span>
                         <div class="card-overlay">
@@ -1492,6 +1655,7 @@
                             <span>💾 ${formatSize(img.size)}</span>
                             <span>📅 ${formatDate(img.createdAt)}</span>
                         </div>
+                        ${renderShortUrlSection(img)}
                         ${img.project ? `<div style="font-size:0.75rem;color:var(--accent-light);margin-bottom:8px;">🏷️ ${img.project}</div>` : ''}
                         ${img.storage === 'cloud' && img.deleteUrl ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px;">🗑️ <a href="${img.deleteUrl}" target="_blank" style="color:inherit;">Delete from ImgBB</a></div>` : ''}
                         <div class="card-actions">
@@ -1508,6 +1672,49 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function renderShortUrlSection(img) {
+            if (img.storage !== 'cloud') {
+                return '';
+            }
+
+            if (img.shortUrlPending) {
+                return `
+                    <div class="short-url-section generating">
+                        <span class="url-icon">⏳</span>
+                        <span class="short-url">Generating short URL...</span>
+                    </div>
+                `;
+            }
+
+            if (img.shortUrl) {
+                return `
+                    <div class="short-url-section">
+                        <span class="url-icon">🔗</span>
+                        <a href="${img.shortUrl}" target="_blank" class="short-url" title="${img.shortUrl}">${img.shortUrl}</a>
+                        <button class="btn btn-primary btn-sm copy-url-btn" onclick="copyText('${img.shortUrl}')">Copy</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="short-url-section error">
+                    <span class="url-icon">⚠️</span>
+                    <span class="short-url" style="color:var(--text-muted);">Short URL unavailable</span>
+                    <button class="btn btn-ghost btn-sm copy-url-btn" onclick="retryShortUrl('${img.id}')">Retry</button>
+                </div>
+            `;
+        }
+
+        async function retryShortUrl(imageId) {
+            const img = currentImages.find(i => i.id === imageId);
+            if (!img || img.storage !== 'cloud') return;
+
+            img.shortUrlPending = true;
+            await saveImage(img);
+            renderGallery();
+            generateShortUrlForImage(imageId, img.data);
         }
 
         function filterGallery() {
@@ -1534,14 +1741,38 @@
         function copyImageUrl(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            copyText(img.data);
-            showToast(img.storage === 'cloud' ? 'Image URL copied!' : 'Full data URL copied!', 'success');
+
+            const urlToCopy = img.shortUrl || img.data;
+            copyText(urlToCopy);
+            showToast(img.shortUrl ? 'Short URL copied!' : (img.storage === 'cloud' ? 'Image URL copied!' : 'Full data URL copied!'), 'success');
+        }
+
+        // Copy URL with visual feedback on the button itself
+        function copyImageUrlWithFeedback(id, btnElement) {
+            const img = currentImages.find(i => i.id === id);
+            if (!img || !btnElement) return;
+
+            const urlToCopy = img.shortUrl || img.data;
+            copyText(urlToCopy);
+
+            // Visual feedback
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '✓ Copied!';
+            btnElement.classList.add('copied');
+
+            showToast(img.shortUrl ? 'Short URL copied to clipboard!' : 'URL copied to clipboard!', 'success');
+
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.remove('copied');
+            }, 2000);
         }
 
         function copyHtml(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const html = `<img src="${img.data}" alt="${img.name}" width="${img.width}" height="${img.height}">`;
+            const src = img.shortUrl || img.data;
+            const html = `<img src="${src}" alt="${img.name}" width="${img.width}" height="${img.height}">`;
             copyText(html);
             showToast('HTML tag copied!', 'success');
         }
@@ -1549,7 +1780,8 @@
         function copyCss(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            const css = `background-image: url("${img.data}");\nbackground-size: cover;\nbackground-position: center;`;
+            const src = img.shortUrl || img.data;
+            const css = `background-image: url("${src}");\nbackground-size: cover;\nbackground-position: center;`;
             copyText(css);
             showToast('CSS snippet copied!', 'success');
         }
@@ -1557,8 +1789,9 @@
         function copyDataUrl(id) {
             const img = currentImages.find(i => i.id === id);
             if (!img) return;
-            copyText(img.data);
-            showToast(img.storage === 'cloud' ? 'Image URL copied!' : 'Base64 data URL copied!', 'success');
+            const urlToCopy = img.shortUrl || img.data;
+            copyText(urlToCopy);
+            showToast(img.shortUrl ? 'Short URL copied!' : (img.storage === 'cloud' ? 'Image URL copied!' : 'Base64 data URL copied!'), 'success');
         }
 
         function copyText(text) {
@@ -1787,7 +2020,7 @@
             try {
                 await initDB();
                 await loadGallery();
-                showToast('ProjectVault ready! Toggle cloud mode to use ImgBB.', 'info');
+                showToast('ProjectVault ready! Toggle cloud mode for short URLs.', 'info');
             } catch (err) {
                 showToast('Database error. Try refreshing.', 'error');
                 console.error(err);
